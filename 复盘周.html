@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>周复盘工作规划完整版 - 总览+编辑一体</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:"微软雅黑",sans-serif;background:#f4f6f9;padding:15px;max-width:1000px;margin:0 auto;}
+.wrap{background:#fff;border-radius:14px;padding:20px;margin-bottom:16px;box-shadow:0 2px 10px #e5e7eb;}
+h3{color:#1f2937;margin-bottom:15px;border-left:4px solid #3b82f6;padding-left:10px;}
+.flex-row{display:flex;gap:12px;flex-wrap:wrap;margin:10px 0;align-items:center;}
+input,select,textarea{border:1px #d1d5db solid;border-radius:6px;padding:8px 10px;outline:none;font-size:14px;}
+input,select{height:36px;}
+button{padding:8px 16px;border:none;border-radius:6px;cursor:pointer;font-size:14px;}
+.btn-blue{background:#3b82f6;color:#fff;}
+.btn-green{background:#10b981;color:#fff;}
+.btn-orange{background:#f97316;color:#fff;}
+.btn-gray{background:#9ca3af;color:#fff;}
+.btn-sm{padding:4px 8px;font-size:12px;}
+.btn-pink{background:#e85d75;color:#fff;}
+.week-title{font-size:16px;font-weight:bold;color:#2563eb;margin:10px 0;}
+.task-card{border:1px #e5e7eb solid;border-radius:8px;padding:15px;margin:12px 0;background:#f9fafb;}
+.main-task{font-weight:bold;font-size:15px;display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.sub-task{margin:6px 0 6px 25px;padding-left:10px;border-left:2px solid #cce0ff;display:flex;align-items:center;gap:8px;}
+.done-text{text-decoration:line-through;color:#9ca3af;}
+.text-area{width:100%;min-height:65px;margin:6px 0;resize:vertical;}
+.info-item{margin:10px 0;}
+.info-tit{font-size:13px;color:#333;margin:4px 0;}
+.plan-tip{color:#0984e3;font-size:13px;}
+.print-hide{display:none !important;}
+
+/* 全局总览样式 */
+.dashboard{display:none;}
+.week-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-top:10px;}
+.week-item{background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:16px;}
+.week-item-title{font-weight:bold;color:#2563eb;margin-bottom:8px;font-size:15px;}
+.week-item-task{font-size:13px;color:#333;margin:4px 0;line-height:1.4;}
+.week-item-desc{font-size:12px;color:#666;margin-top:6px;line-height:1.4;}
+.btn-to-week{margin-top:10px;padding:6px 10px;font-size:12px;background:#3b82f6;color:white;border:none;border-radius:6px;cursor:pointer;}
+.empty-tip{text-align:center;color:#999;padding:30px 0;font-size:14px;}
+.tab-bar{display:flex;gap:10px;margin-bottom:10px;}
+.tab-btn{flex:1;padding:10px;border-radius:8px;border:none;background:#e5e7eb;color:#333;cursor:pointer;}
+.tab-btn.active{background:#3b82f6;color:white;}
+</style>
+</head>
+<body>
+
+<!-- 顶部选项卡 -->
+<div class="wrap">
+    <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab('edit')">📝 周复盘编辑</button>
+        <button class="tab-btn" onclick="switchTab('dashboard')">📊 全局周总览</button>
+    </div>
+</div>
+
+<!-- 编辑页面（你原来的全部功能） -->
+<div id="editPage">
+<!-- 周数切换与历史查询 -->
+<div class="wrap">
+    <h3>📅 周视图切换 / 历史复盘查询</h3>
+    <div class="flex-row">
+        <input type="date" id="chooseDate">
+        <button class="btn-blue" onclick="getWeekByDate()">查看该周记录</button>
+        <span class="week-title" id="nowWeekRange">加载中...</span>
+    </div>
+    <div class="flex-row">
+        <button class="btn-gray" onclick="prevWeek()">上一周</button>
+        <button class="btn-gray" onclick="nextWeek()">下一周</button>
+        <button class="btn-orange" onclick="initCurrentWeek()">回到本周</button>
+    </div>
+</div>
+
+<!-- 任务管理区域 -->
+<div class="wrap">
+    <h3>✅ 本周主任务 + 子任务</h3>
+    <div class="flex-row">
+        <input id="mainTaskName" placeholder="新增本周主任务" style="flex:1;">
+        <button class="btn-green" onclick="addMainTask()">添加主任务</button>
+    </div>
+    <div class="flex-row" style="margin-top:10px;">
+        <select id="selectMainTask"></select>
+        <input id="subTaskName" placeholder="填写子任务">
+        <button class="btn-sm btn-blue" onclick="addSubTask()">添加子任务</button>
+    </div>
+    <div id="taskListBox"></div>
+    <div style="margin-top:15px;text-align:center;flex-wrap:wrap;display:flex;gap:10px;justify-content:center;">
+        <button class="btn-green" onclick="saveWeekAll()">保存本周全部内容</button>
+        <button class="btn-blue" onclick="planToNextSub()">本周规划→生成下周同名任务子任务</button>
+        <button class="btn-pink" onclick="printWeekData()">🖨️ 打印本周复盘记录</button>
+    </div>
+</div>
+
+<!-- 全局本周复盘 -->
+<div class="wrap">
+    <h3>📝 本周整体工作总结复盘</h3>
+    <textarea class="text-area" id="wholeReview" placeholder="总结整周工作状态、得失、整体优化方向"></textarea>
+</div>
+
+<!-- 数据备份恢复 -->
+<div class="wrap">
+    <h3>💾 数据长久备份（防丢失）</h3>
+    <div class="flex-row">
+        <button class="btn-green" onclick="exportAllData()">导出全部数据备份</button>
+        <input type="file" id="fileInput" accept=".json" style="display:none" onchange="importAllData(event)">
+        <button class="btn-blue" onclick="document.getElementById('fileInput').click()">导入备份数据</button>
+    </div>
+    <p style="font-size:13px;color:#666;margin-top:8px;">导出json文件存桌面，永久保存，换设备直接导入</p>
+</div>
+
+<!-- 定时提醒 -->
+<div class="wrap">
+    <h3>⏰ 复盘定时提醒</h3>
+    <p>默认每周日 21:00 自动提醒撰写复盘</p>
+    <div id="remindTip" style="color:red;font-weight:bold;margin:8px 0;"></div>
+    <button class="btn-orange" onclick="addSysCalendarRemind()">同步系统日历提醒</button>
+</div>
+</div>
+
+<!-- 全局总览页面（新增） -->
+<div id="dashboardPage" class="dashboard wrap">
+    <h3>📊 全部周复盘总览（快速查看每周工作）</h3>
+    <div id="weekDashboard" class="week-grid"></div>
+</div>
+
+<!-- 打印隐藏区域 -->
+<div class="print-hide">
+    <h2 id="printTitle" style="text-align:center;"></h2>
+    <div id="printContent"></div>
+</div>
+
+<script>
+const REMIND_WEEK = 0;
+const REMIND_HOUR = 21;
+const REMIND_MIN = 0;
+let nowWeekStart = '';
+let nowWeekEnd = '';
+
+// 切换选项卡
+function switchTab(type){
+    document.getElementById('editPage').style.display = type==='edit'?'block':'none';
+    document.getElementById('dashboardPage').style.display = type==='dashboard'?'block':'none';
+    let btns = document.querySelectorAll('.tab-btn');
+    btns.forEach(b=>b.classList.remove('active'));
+    event.target.classList.add('active');
+    if(type === 'dashboard') renderDashboard();
+}
+
+// 渲染全局总览
+function renderDashboard(){
+    let container = document.getElementById('weekDashboard');
+    let weeks = [];
+    for(let i=0;i<localStorage.length;i++){
+        let key = localStorage.key(i);
+        if(key.startsWith('week_') && key.endsWith('_mainTask')){
+            let base = key.replace('_mainTask','');
+            let [s,e] = base.replace('week_','').split('_');
+            weeks.push({start:s, end:e, base:base});
+        }
+    }
+    weeks.sort((a,b)=>new Date(b.start)-new Date(a.start));
+    if(weeks.length===0){
+        container.innerHTML = '<div class="empty-tip">暂无周记录，请先去编辑页填写</div>';
+        return;
+    }
+    let html = '';
+    weeks.forEach(w=>{
+        let tasks = JSON.parse(localStorage.getItem(w.base+'_mainTask')||'[]');
+        let review = localStorage.getItem(w.base+'_wholeReview')||'';
+        let names = tasks.map(t=>t.name).slice(0,3).join(' | ');
+        let brief = review.length>50?review.substring(0,50)+'...':review;
+        html+=`
+        <div class="week-item">
+            <div class="week-item-title">${w.start} ~ ${w.end}</div>
+            <div class="week-item-task">${names||'无主任务'}</div>
+            <div class="week-item-desc">${brief||'无总结'}</div>
+            <button class="btn-to-week" onclick="jumpToWeek('${w.start}')">查看此周详情</button>
+        </div>`;
+    });
+    container.innerHTML = html;
+}
+
+// 跳转到指定周
+function jumpToWeek(start){
+    switchTab('edit');
+    document.getElementById('chooseDate').value = start;
+    getWeekByDate();
+}
+
+// 获取周一~周日周区间
+function getWeekRange(d){
+    let date = new Date(d);
+    let day = date.getDay();
+    let diffMon = day === 0 ? -6 : 1 - day;
+    let diffSun = day === 0 ? 0 : 7 - day;
+    let mon = new Date(date.getTime() + diffMon*24*3600*1000);
+    let sun = new Date(date.getTime() + diffSun*24*3600*1000);
+    let f = t=>`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
+    return {start:f(mon),end:f(sun)};
+}
+
+// 初始化本周
+function initCurrentWeek(){
+    let w = getWeekRange(new Date());
+    nowWeekStart = w.start;
+    nowWeekEnd = w.end;
+    document.getElementById('nowWeekRange').innerText = `当前周：${nowWeekStart} ~ ${nowWeekEnd}`;
+    loadWeekData();
+}
+
+// 选日期查周
+function getWeekByDate(){
+    let d = document.getElementById('chooseDate').value;
+    if(!d)return alert('请选择日期');
+    let w = getWeekRange(d);
+    nowWeekStart = w.start;
+    nowWeekEnd = w.end;
+    document.getElementById('nowWeekRange').innerText = `查询周：${nowWeekStart} ~ ${nowWeekEnd}`;
+    loadWeekData();
+}
+
+// 上下周切换
+function prevWeek(){
+    let s = new Date(nowWeekStart);
+    s.setDate(s.getDate()-7);
+    let w = getWeekRange(s);
+    nowWeekStart = w.start;nowWeekEnd=w.end;
+    document.getElementById('nowWeekRange').innerText = `当前周：${nowWeekStart} ~ ${nowWeekEnd}`;
+    loadWeekData();
+}
+function nextWeek(){
+    let s = new Date(nowWeekStart);
+    s.setDate(s.getDate()+7);
+    let w = getWeekRange(s);
+    nowWeekStart = w.start;nowWeekEnd=w.end;
+    document.getElementById('nowWeekRange').innerText = `当前周：${nowWeekStart} ~ ${nowWeekEnd}`;
+    loadWeekData();
+}
+
+function getWeekKey(){
+    return `week_${nowWeekStart}_${nowWeekEnd}`;
+}
+
+// 更新主任务下拉框
+function updateMainSelect(list){
+    let sel = document.getElementById('selectMainTask');
+    sel.innerHTML = '';
+    list.forEach((item,i)=>{
+        let op = document.createElement('option');
+        op.value = i;
+        op.innerText = item.name;
+        sel.appendChild(op);
+    });
+}
+
+// 保存本周所有数据
+function saveWeekAll(){
+    let key = getWeekKey();
+    let mainList = JSON.parse(localStorage.getItem(key+'_mainTask')||'[]');
+    mainList.forEach((item,idx)=>{
+        item.taskResult = document.getElementById(`res_${idx}`).value||'';
+        item.taskThink = document.getElementById(`thi_${idx}`).value||'';
+        item.taskLearn = document.getElementById(`lea_${idx}`).value||'';
+        item.nextPlan = document.getElementById(`nex_${idx}`).value||'';
+    });
+    let whole = document.getElementById('wholeReview').value;
+    localStorage.setItem(key+'_wholeReview',whole);
+    localStorage.setItem(key+'_mainTask',JSON.stringify(mainList));
+    alert('✅ 本周内容全部保存成功');
+}
+
+// 加载本周数据
+function loadWeekData(){
+    let key = getWeekKey();
+    let mainList = JSON.parse(localStorage.getItem(key+'_mainTask')||'[]');
+    document.getElementById('wholeReview').value = localStorage.getItem(key+'_wholeReview')||'';
+    updateMainSelect(mainList);
+    renderTaskHtml(mainList);
+}
+
+// 渲染页面结构
+function renderTaskHtml(list){
+    let box = document.getElementById('taskListBox');
+    let html = '';
+    list.forEach((mItem,mIdx)=>{
+        html += `
+        <div class="task-card">
+            <div class="main-task">
+                <input type="checkbox" ${mItem.finish?'checked':''} onchange="changeMainFin(${mIdx})">
+                <span class="${mItem.finish?'done-text':''}">${mItem.name}</span>
+                <button class="btn-sm" onclick="delMain(${mIdx})">删除</button>
+            </div>
+        `;
+        mItem.subList.forEach((sItem,sIdx)=>{
+            html += `
+            <div class="sub-task">
+                <input type="checkbox" ${sItem.finish?'checked':''} onchange="changeSubFin(${mIdx},${sIdx})">
+                <span class="${sItem.finish?'done-text':''}">${sItem.name}</span>
+                <button class="btn-sm" onclick="delSub(${mIdx},${sIdx})">删除</button>
+            </div>
+            `;
+        });
+        html += `
+            <div class="info-item">
+                <p class="info-tit">📊 本任务达成情况</p>
+                <textarea class="text-area" id="res_${mIdx}">${mItem.taskResult||''}</textarea>
+            </div>
+            <div class="info-item">
+                <p class="info-tit">💭 执行过程思考总结</p>
+                <textarea class="text-area" id="thi_${mIdx}">${mItem.taskThink||''}</textarea>
+            </div>
+            <div class="info-item">
+                <p class="info-tit">📖 本次学习收获</p>
+                <textarea class="text-area" id="lea_${mIdx}">${mItem.taskLearn||''}</textarea>
+            </div>
+            <div class="info-item">
+                <p class="info-tit plan-tip">📌 本任务下周推进规划（自动转为下周同名主任务子任务）</p>
+                <textarea class="text-area" id="nex_${mIdx}" placeholder="多条建议换行填写，每行自动生成一条子任务">${mItem.nextPlan||''}</textarea>
+            </div>
+        </div>
+        `;
+    });
+    box.innerHTML = html;
+}
+
+// 新增主任务
+function addMainTask(){
+    let name = document.getElementById('mainTaskName').value.trim();
+    if(!name)return alert('请填写主任务名称');
+    let key = getWeekKey();
+    let arr = JSON.parse(localStorage.getItem(key+'_mainTask')||'[]');
+    arr.push({
+        name:name,
+        finish:false,
+        subList:[],
+        taskResult:'',
+        taskThink:'',
+        taskLearn:'',
+        nextPlan:''
+    });
+    localStorage.setItem(key+'_mainTask',JSON.stringify(arr));
+    document.getElementById('mainTaskName').value='';
+    loadWeekData();
+}
+
+// 新增子任务
+function addSubTask(){
+    let sName = document.getElementById('subTaskName').value.trim();
+    let mIdx = document.getElementById('selectMainTask').value;
+    if(!sName)return alert('请填写子任务');
+    let key = getWeekKey();
+    let arr = JSON.parse(localStorage.getItem(key+'_mainTask')||'[]');
+    arr[mIdx].subList.push({name:sName,finish:false});
+    localStorage.setItem(key+'_mainTask',JSON.stringify(arr));
+    document.getElementById('subTaskName').value='';
+    loadWeekData();
+}
+
+// 主任务完成状态
+function changeMainFin(idx){
+    let key = getWeekKey();
+    let arr = JSON.parse(localStorage.getItem(key+'_mainTask')||'[]');
+    arr[idx].finish = !arr[idx].finish;
+    localStorage.setItem(key+'_mainTask',JSON.stringify(arr));
+    loadWeekData();
+}
+
+// 子任务完成状态
+function changeSubFin(m,s){
+    let key = getWeekKey();
+    let arr = JSON.parse(localStorage.getItem(key+'_mainTask')||'[]');
+    arr[m].subList[s].finish = !arr[m].subList[s].finish;
+    localStorage.setItem(key+'_mainTask',JSON.stringify(arr));
+    loadWeekData();
+}
+
+// 删除主任务
+function delMain(idx){
+    if(!confirm('确定删除该任务及所有内容？'))return;
+    let key = getWeekKey();
+    let arr = JSON.parse(localStorage.getItem(key+'_mainTask')||'[]');
+    arr.splice(idx,1);
+    localStorage.setItem(key+'_mainTask',JSON.stringify(arr));
+    loadWeekData();
+}
+
+// 删除子任务
+function delSub(m,s){
+    if(!confirm('删除该子任务？'))return;
+    let key = getWeekKey();
+    let arr = JSON.parse(localStorage.getItem(key+'_mainTask')||'[]');
+    arr[m].subList.splice(s,1);
+    localStorage.setItem(key+'_mainTask',JSON.stringify(arr));
+    loadWeekData();
+}
+
+// 本周规划转下周同名主任务子任务
+function planToNextSub(){
+    saveWeekAll();
+    let nowKey = getWeekKey();
+    let nowMainList = JSON.parse(localStorage.getItem(nowKey+'_mainTask')||'[]');
+    if(nowMainList.length === 0) return alert('暂无本周主任务，无法迁移');
+    let nowStartDate = new Date(nowWeekStart);
+    nowStartDate.setDate(nowStartDate.getDate()+7);
+    let nextWeek = getWeekRange(nowStartDate);
+    let nextKey = `week_${nextWeek.start}_${nextWeek.end}`;
+    let nextMainList = JSON.parse(localStorage.getItem(nextKey+'_mainTask')||'[]');
+
+    nowMainList.forEach(nowMain=>{
+        let planText = nowMain.nextPlan.trim();
+        if(!planText) return;
+        let planLines = planText.split(/[\n\r]+/).filter(t=>t.trim());
+        if(planLines.length === 0) return;
+        let targetMain = nextMainList.find(item=>item.name === nowMain.name);
+        if(targetMain){
+            planLines.forEach(line=>{
+                targetMain.subList.push({name:line.trim(),finish:false});
+            });
+        }else{
+            let newMain = {
+                name:nowMain.name,
+                finish:false,
+                subList: planLines.map(line=>({name:line.trim(),finish:false})),
+                taskResult:'',
+                taskThink:'',
+                taskLearn:'',
+                nextPlan:''
+            };
+            nextMainList.push(newMain);
+        }
+    });
+    localStorage.setItem(nextKey+'_mainTask',JSON.stringify(nextMainList));
+    alert(`✅ 迁移完成！已存入【${nextWeek.start}~${nextWeek.end}】同名任务下为子任务`);
+}
+
+// 打印本周复盘
+function printWeekData(){
+    saveWeekAll();
+    let key = getWeekKey();
+    let mainList = JSON.parse(localStorage.getItem(key+'_mainTask')||'[]');
+    let wholeText = localStorage.getItem(key+'_wholeReview')||'';
+    let printTitle = document.getElementById('printTitle');
+    let printBox = document.getElementById('printContent');
+    printTitle.innerText = `${nowWeekStart} ~ ${nowWeekEnd} 工作周复盘记录`;
+    let pHtml = '';
+    mainList.forEach((item,idx)=>{
+        pHtml += `<h4>主任务：${item.name} ${item.finish?'【已完成】':'【进行中】'}</h4>`;
+        item.subList.forEach(s=>{
+            pHtml += `<p>• ${s.name} ${s.finish?'√已完成':'○未完成'}</p>`;
+        });
+        pHtml += `<p><b>达成情况：</b>${item.taskResult||'无'}</p>`;
+        pHtml += `<p><b>过程思考：</b>${item.taskThink||'无'}</p>`;
+        pHtml += `<p><b>学习收获：</b>${item.taskLearn||'无'}</p>`;
+        pHtml += `<p><b>下周规划：</b>${item.nextPlan||'无'}</p><hr>`;
+    });
+    pHtml += `<h4>本周整体复盘总结</h4><p>${wholeText||'暂无总结'}</p>`;
+    printBox.innerHTML = pHtml;
+    window.print();
+}
+
+// 导出全部数据
+function exportAllData(){
+    let allData = {};
+    for(let i=0;i<localStorage.length;i++){
+        let k = localStorage.key(i);
+        allData[k] = localStorage.getItem(k);
+    }
+    let jsonStr = JSON.stringify(allData,null,2);
+    let blob = new Blob([jsonStr],{type:'application/json'});
+    let a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `周复盘全数据备份.json`;
+    a.click();
+    alert('✅ 全部数据导出成功，永久留存');
+}
+
+// 导入数据
+function importAllData(e){
+    let file = e.target.files[0];
+    if(!file)return;
+    let reader = new FileReader();
+    reader.onload = function(ev){
+        try{
+            let data = JSON.parse(ev.target.result);
+            localStorage.clear();
+            for(let k in data) localStorage.setItem(k,data[k]);
+            alert('✅ 导入成功，刷新生效');
+            location.reload();
+        }catch(err){ alert('导入失败'); }
+    };
+    reader.readAsText(file);
+}
+
+// 日历通知
+function addSysCalendarRemind(){
+    if(!window.Notification){
+        alert('请使用Chrome/Edge');
+        return;
+    }
+    Notification.requestPermission().then(res=>{
+        if(res==='granted'){
+            new Notification('周复盘提醒','每周日21点提醒填写复盘');
+            alert('授权成功');
+        }
+    });
+}
+
+// 定时提醒
+function checkRemindTime(){
+    let now = new Date();
+    let w = now.getDay(),h=now.getHours(),m=now.getMinutes();
+    let tip = document.getElementById('remindTip');
+    if(w===REMIND_WEEK && h===REMIND_HOUR && m===REMIND_MIN){
+        tip.innerText = '🔔 复盘时间到！';
+        alert('⏰ 开始撰写本周复盘吧');
+    }
+}
+setInterval(checkRemindTime,60000);
+window.onload = initCurrentWeek;
+</script>
+</body>
+</html>
